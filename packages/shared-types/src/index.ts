@@ -1,3 +1,5 @@
+export * from "./transcript";
+
 // Mirrors apps/api/app/schemas.py. Kept here so the frontend and any future
 // Node service share one source of truth for the wire format — apps/web
 // currently redeclares these in lib/api.ts for zero-build-step simplicity,

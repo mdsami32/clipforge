@@ -10,11 +10,12 @@ import uuid
 
 from .. import db
 from ..config import settings
-from ..storage import public_url, upload_from_path
+from ..storage import upload_from_path
 from . import download as download_task
 from . import managed_ingest
 from .analyze import find_highlight_candidates
-from .transcribe import transcribe as transcribe_local
+from ..transcription.normalize import normalize_word_list
+from .transcribe import transcribe_timeline
 
 
 def run_ingest_pipeline(project_id: str, job_id: str):
@@ -60,15 +61,25 @@ def run_ingest_pipeline(project_id: str, job_id: str):
         _set_progress(session, job, 40)
         if settings.ingest_backend == "managed":
             words, language = managed_ingest.transcribe(local_path)
+            transcript = normalize_word_list(words, language=language, duration=project.duration_seconds)
         else:
-            words, language = transcribe_local(local_path)
+            transcript = transcribe_timeline(local_path)
 
-        session.add(db.Transcript(project_id=project.id, words=words, language=language))
+        session.add(
+            db.Transcript(
+                project_id=project.id,
+                transcript=transcript,
+                words=transcript["words"],
+                language=transcript["language"],
+            )
+        )
+        if not project.duration_seconds and transcript["duration"]:
+            project.duration_seconds = transcript["duration"]
         session.commit()
 
         # --- Stage 3: AI highlight detection ---
         _set_progress(session, job, 75)
-        candidates = find_highlight_candidates(words)
+        candidates = find_highlight_candidates(transcript["words"])
         for c in candidates:
             session.add(
                 db.ClipCandidate(

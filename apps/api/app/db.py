@@ -65,7 +65,8 @@ class Transcript(Base):
     __tablename__ = "transcripts"
     id: Mapped[uuid.UUID] = _uuid_col()
     project_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"))
-    words: Mapped[list] = mapped_column(JSON)  # [{word, start, end}]
+    transcript: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    words: Mapped[list] = mapped_column(JSON)  # legacy flattened compatibility field
     language: Mapped[str | None] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), default=datetime.utcnow)
 

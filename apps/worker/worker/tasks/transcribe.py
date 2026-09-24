@@ -1,12 +1,9 @@
-"""Word-level timestamped transcription via faster-whisper (self-hosted).
+"""Word-level transcription via faster-whisper."""
 
-Swap point: to use a hosted transcription API instead, implement the same
-`transcribe(local_video_path) -> list[dict]` signature in managed_ingest.py
-and switch on settings.ingest_backend in pipeline.py.
-"""
 from faster_whisper import WhisperModel
 
 from ..config import settings
+from ..transcription.normalize import normalize_transcript
 
 _model: WhisperModel | None = None
 
@@ -22,17 +19,18 @@ def _get_model() -> WhisperModel:
     return _model
 
 
-def transcribe(local_video_path: str) -> tuple[list[dict], str]:
-    """Returns (word_level_segments, detected_language).
-
-    word_level_segments: [{"word": str, "start": float, "end": float}, ...]
-    """
+def transcribe_timeline(local_video_path: str) -> dict:
+    """Return the canonical transcript used by downstream Smart Clipping."""
     model = _get_model()
     segments, info = model.transcribe(local_video_path, word_timestamps=True)
+    return normalize_transcript(
+        segments,
+        language=getattr(info, "language", None),
+        duration=getattr(info, "duration", None),
+    )
 
-    words = []
-    for segment in segments:
-        for w in segment.words or []:
-            words.append({"word": w.word.strip(), "start": w.start, "end": w.end})
 
-    return words, info.language
+def transcribe(local_video_path: str) -> tuple[list[dict], str | None]:
+    """Backward-compatible legacy helper returning words and language."""
+    transcript = transcribe_timeline(local_video_path)
+    return transcript["words"], transcript["language"]

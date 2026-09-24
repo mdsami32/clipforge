@@ -36,7 +36,8 @@ CREATE TABLE jobs (
 CREATE TABLE transcripts (
     id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     project_id      UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-    -- word-level timestamps: [{ "word": "hello", "start": 0.12, "end": 0.34 }, ...]
+    transcript      JSONB NOT NULL DEFAULT '{}'::jsonb, -- canonical normalized timeline
+    -- legacy flattened word-level timestamps
     words           JSONB NOT NULL,
     language        TEXT,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -108,4 +109,5 @@ CREATE TABLE publish_history (
 CREATE INDEX idx_jobs_project_id ON jobs(project_id);
 CREATE INDEX idx_clips_project_id ON clips(project_id);
 CREATE INDEX idx_clip_candidates_project_id ON clip_candidates(project_id);
+CREATE INDEX idx_transcripts_project_id_created_at ON transcripts(project_id, created_at DESC);
 CREATE INDEX idx_publish_history_clip_id ON publish_history(clip_id);

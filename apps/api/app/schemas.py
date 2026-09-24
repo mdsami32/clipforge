@@ -37,6 +37,15 @@ class JobOut(BaseModel):
     error_message: str | None = None
 
 
+class TranscriptOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    project_id: uuid.UUID
+    transcript: dict[str, Any]
+    words: list[dict[str, Any]]
+    language: str | None = None
+
+
 class ClipCandidateOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: uuid.UUID
