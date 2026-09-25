@@ -13,7 +13,7 @@ from ..config import settings
 from ..storage import upload_from_path
 from . import download as download_task
 from . import managed_ingest
-from .analyze import find_highlight_candidates
+from ..candidates.generate import generate_clip_candidates
 from ..transcription.normalize import normalize_word_list
 from .transcribe import transcribe_timeline
 
@@ -77,9 +77,9 @@ def run_ingest_pipeline(project_id: str, job_id: str):
             project.duration_seconds = transcript["duration"]
         session.commit()
 
-        # --- Stage 3: AI highlight detection ---
+        # --- Stage 3: deterministic candidate generation ---
         _set_progress(session, job, 75)
-        candidates = find_highlight_candidates(transcript["words"])
+        candidates = generate_clip_candidates(transcript)
         for c in candidates:
             session.add(
                 db.ClipCandidate(
